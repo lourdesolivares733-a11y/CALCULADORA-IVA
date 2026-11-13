@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Compacta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .btn {
+            transition: all 0.1s ease;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2">
+
+    <div class="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-3 flex flex-col gap-2">
+        
+        <!-- Header / Modos -->
+        <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5">
+            <span class="font-bold text-slate-400 tracking-wider">CALCULADORA</span>
+            <div class="flex bg-slate-800 rounded-lg p-0.5">
+                <button id="btnStandard" onclick="setMode('standard')" class="px-2 py-0.5 rounded-md bg-blue-600 text-white font-medium transition">Est.</button>
+                <button id="btnScientific" onclick="setMode('scientific')" class="px-2 py-0.5 rounded-md text-slate-400 hover:text-white transition">Cient.</button>
+            </div>
+        </div>
+
+        <!-- Pantalla -->
+        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-end text-right min-h-[75px] relative">
+            <div id="history" class="text-xs text-slate-500 h-4 overflow-hidden text-ellipsis whitespace-nowrap"></div>
+            <div id="subOutput" class="text-[11px] text-blue-400 font-medium h-3.5"></div>
+            <div id="output" class="text-2xl font-bold tracking-tight text-white overflow-hidden text-ellipsis whitespace-nowrap">0</div>
+        </div>
+
+        <!-- Panel de IVA y Tasas -->
+        <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="applyIVA(true)" class="btn bg-emerald-900/40 border border-emerald-700/50 hover:bg-emerald-800 text-emerald-300 font-semibold py-1 px-2 rounded-lg text-xs flex items-center justify-center gap-1">
+                <span>+IVA</span>
+                <span id="ivaLabel" class="text-[10px] bg-emerald-950 px-1 rounded">16%</span>
+            </button>
+            <button onclick="applyIVA(false)" class="btn bg-rose-900/40 border border-rose-700/50 hover:bg-rose-800 text-rose-300 font-semibold py-1 px-2 rounded-lg text-xs flex items-center justify-center gap-1">
+                <span>-IVA</span>
+                <span class="text-[10px] text-rose-400">(Base)</span>
+            </button>
+        </div>
+
+        <!-- Teclado Científico (Oculto por defecto) -->
+        <div id="scientificPanel" class="grid grid-cols-5 gap-1 hidden">
+            <button onclick="appendFunction('sin')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">sin</button>
+            <button onclick="appendFunction('cos')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">cos</button>
+            <button onclick="appendFunction('tan')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">tan</button>
+            <button onclick="appendFunction('Math.log10')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">log</button>
+            <button onclick="appendFunction('Math.log')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">ln</button>
+            
+            <button onclick="appendValue('^')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">x^y</button>
+            <button onclick="appendFunction('Math.sqrt')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">√</button>
+            <button onclick="appendValue('Math.PI')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">π</button>
+            <button onclick="appendValue('Math.E')" class="btn bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs py-1 rounded-lg">e</button>
+            <button onclick="clearAll()" class="btn bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs py-1 rounded-lg">AC</button>
+        </div>
+
+        <!-- Teclado Estándar -->
+        <div class="grid grid-cols-4 gap-1.5">
+            <button onclick="clearAll()" class="btn bg-slate-800 hover:bg-slate-700 text-rose-400 font-semibold py-1.5 rounded-lg text-xs">C</button>
+            <button onclick="appendValue('(')" class="btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-1.5 rounded-lg text-xs">(</button>
+            <button onclick="appendValue(')')" class="btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-1.5 rounded-lg text-xs">)</button>
+            <button onclick="appendValue('/')" class="btn bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold py-1.5 rounded-lg text-xs">÷</button>
+
+            <button onclick="appendValue('7')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">7</button>
+            <button onclick="appendValue('8')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">8</button>
+            <button onclick="appendValue('9')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">9</button>
+            <button onclick="appendValue('*')" class="btn bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold py-1.5 rounded-lg text-xs">×</button>
+
+            <button onclick="appendValue('4')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">4</button>
+            <button onclick="appendValue('5')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">5</button>
+            <button onclick="appendValue('6')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">6</button>
+            <button onclick="appendValue('-')" class="btn bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold py-1.5 rounded-lg text-xs">-</button>
+
+            <button onclick="appendValue('1')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">1</button>
+            <button onclick="appendValue('2')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">2</button>
+            <button onclick="appendValue('3')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">3</button>
+            <button onclick="appendValue('+')" class="btn bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold py-1.5 rounded-lg text-xs">+</button>
+
+            <button onclick="appendValue('0')" class="btn bg-slate-800/80 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm col-span-2">0</button>
+            <button onclick="appendValue('.')" class="btn bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1.5 rounded-lg text-sm">,</button>
+            <button onclick="calculate()" class="btn bg-blue-600 hover:bg-blue-500 text-white font-semibold py-1.5 rounded-lg text-sm">=</button>
+        </div>
+    </div>
+
+    <script>
+        let currentInput = '0';
+        let historyString = '';
+        let ivaRate = 16; 
+        let isScientific = false;
+
+        function formatDisplayNumber(str) {
+            if (str === 'Error') return 'Error';
+            return str.replace(/\b\d+(\.\d+)?\b/g, (match) => {
+                let parts = match.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                return parts.join(',');
+            });
+        }
+
+        function updateDisplay() {
+            document.getElementById('output').innerText = formatDisplayNumber(currentInput);
+            document.getElementById('history').innerText = formatDisplayNumber(historyString);
+        }
+
+        function appendValue(val) {
+            if (currentInput === '0' && val !== '.') {
+                currentInput = val;
+            } else {
+                currentInput += val;
+            }
+            updateDisplay();
+        }
+
+        function appendFunction(func) {
+            if (currentInput === '0') currentInput = func + '(';
+            else currentInput += func + '(';
+            updateDisplay();
+        }
+
+        function clearAll() {
+            currentInput = '0';
+            historyString = '';
+            document.getElementById('subOutput').innerText = '';
+            updateDisplay();
+        }
+
+        function setMode(mode) {
+            isScientific = (mode === 'scientific');
+            const sciPanel = document.getElementById('scientificPanel');
+            const btnStd = document.getElementById('btnStandard');
+            const btnSci = document.getElementById('btnScientific');
+
+            if (isScientific) {
+                sciPanel.classList.remove('hidden');
+                btnSci.classList.add('bg-blue-600', 'text-white');
+                btnSci.classList.remove('text-slate-400');
+                btnStd.classList.remove('bg-blue-600', 'text-white');
+                btnStd.classList.add('text-slate-400');
+            } else {
+                sciPanel.classList.add('hidden');
+                btnStd.classList.add('bg-blue-600', 'text-white');
+                btnStd.classList.remove('text-slate-400');
+                btnSci.classList.remove('bg-blue-600', 'text-white');
+                btnSci.classList.add('text-slate-400');
+            }
+        }
+
+        function applyIVA(isAdd) {
+            try {
+                let val = eval(currentInput.replace(/×/g, '*').replace(/÷/g, '/'));
+                if (isNaN(val)) return;
+
+                let result;
+                let subText = '';
+                if (isAdd) {
+                    let ivaAmount = val * (ivaRate / 100);
+                    result = val + ivaAmount;
+                    subText = `Base: ${formatDisplayNumber(val.toFixed(2))} + IVA (${ivaRate}%): ${formatDisplayNumber(ivaAmount.toFixed(2))}`;
+                } else {
+                    let base = val / (1 + (ivaRate / 100));
+                    let ivaAmount = val - base;
+                    result = base;
+                    subText = `Base: ${formatDisplayNumber(base.toFixed(2))} | IVA (${ivaRate}%): ${formatDisplayNumber(ivaAmount.toFixed(2))}`;
+                }
+                historyString = `${currentInput} (${isAdd ? '+IVA' : '-IVA'})`;
+                currentInput = result.toFixed(2);
+                document.getElementById('subOutput').innerText = subText;
+                updateDisplay();
+            } catch (e) {
+                currentInput = 'Error';
+                updateDisplay();
+            }
+        }
+
+        function calculate() {
+            try {
+                let expression = currentInput
+                    .replace(/×/g, '*')
+                    .replace(/÷/g, '/')
+                    .replace(/\^/g, '**');
+
+                expression = expression.replace(/([0-9.]+)([\+\-])([0-9.]+)%/g, (match, p1, op, p2) => {
+                    return `${p1} ${op} (${p1} * ${p2} / 100)`;
+                });
+                expression = expression.replace(/([0-9.]+)([\*\/])([0-9.]+)%/g, (match, p1, op, p2) => {
+                    return `${p1} ${op} (${p2} / 100)`;
+                });
+                expression = expression.replace(/([0-9.]+)%/g, (match, p1) => {
+                    return `(${p1} / 100)`;
+                });
+
+                let result = eval(expression);
+                if (!isFinite(result)) throw new Error("Math error");
+
+                historyString = currentInput + ' =';
+                currentInput = Number(result.toFixed(6)).toString();
+                document.getElementById('subOutput').innerText = '';
+                updateDisplay();
+            } catch (error) {
+                currentInput = 'Error';
+                updateDisplay();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.key >= '0' && e.key <= '9') || e.key === '.' || e.key === ',' || e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '(' || e.key === ')') {
+                appendValue(e.key === ',' ? '.' : e.key);
+            } else if (e.key === 'Enter' || e.key === '=') {
+                calculate();
+            } else if (e.key === 'Backspace') {
+                if (currentInput.length > 1) {
+                    currentInput = currentInput.slice(0, -1);
+                } else {
+                    currentInput = '0';
+                }
+                updateDisplay();
+            } else if (e.key === 'Escape') {
+                clearAll();
+            } else if (e.key === '%') {
+                appendValue('%');
+            }
+        });
+    </script>
+</body>
+</html>
